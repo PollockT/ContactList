@@ -1,6 +1,7 @@
 package com.example.contactlist;
 
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentTransaction;
@@ -12,7 +13,7 @@ import com.example.contactlist.Utils.UniversalImageLoader;
 import com.example.contactlist.models.Contact;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
-
+import java.io.ByteArrayOutputStream;
 
 
 public class MainActivity extends AppCompatActivity implements
@@ -20,12 +21,26 @@ public class MainActivity extends AppCompatActivity implements
         ContactFragment.OnEditContactListener {
 
     private static final String TAG = "MainActivity";
+
     private static final int REQUEST_CODE = 1;
 
-    /**
-     *  Logic that moves from list view to view a contact's parameter in the layout form
-     * @param contact the part of the array that contains an individual's parameters
-     */
+    @Override
+    public void onEditContactSelected(Contact contact) {
+        Log.d(TAG, "OnContactSelected: contact selected from "
+                + getString(R.string.edit_contact_fragment)
+                + " " + contact.getName());
+
+        EditContactFragment fragment = new EditContactFragment();
+        Bundle args = new Bundle();
+        args.putParcelable(getString(R.string.contact), contact);
+        fragment.setArguments(args);
+
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, fragment);
+        transaction.addToBackStack(getString(R.string.edit_contact_fragment));
+        transaction.commit();
+    }
+
     @Override
     public void OnContactSelected(Contact contact) {
         Log.d(TAG, "OnContactSelected: contact selected from "
@@ -48,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.d(TAG, "onCreate: started. Contact List Application Started!");
+        Log.d(TAG, "onCreate: started.");
 
         initImageLoader();
 
@@ -76,79 +91,66 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     /**
-     * Generalized method to call for permissions of any array
-     * @param permissions the action permission is being asked to have access to
+     * Compress a bitmap by the @param "quality"
+     * Quality can be anywhere from 1-100 : 100 being the highest quality.
+     * @param bitmap
+     * @param quality
+     * @return
+     */
+    public Bitmap compressBitmap(Bitmap bitmap, int quality){
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
+        return bitmap;
+    }
+
+    /**
+     * Generalized method for asking permission. Can pass any array of permissions
+     * @param permissions
      */
     public void verifyPermissions(String[] permissions){
-        Log.d(TAG, "verifyPermissions: asking user for permission");
-        ActivityCompat.requestPermissions(MainActivity.this,permissions,REQUEST_CODE);
+        Log.d(TAG, "verifyPermissions: asking user for permissions.");
+        ActivityCompat.requestPermissions(
+                MainActivity.this,
+                permissions,
+                REQUEST_CODE
+        );
     }
 
     /**
-     * Checks for permissions one at a time in the background
-     * @param permissions the action permission is being asked to have access to
-     * @return true or false
+     * Checks to see if permission was granted for the passed parameters
+     * ONLY ONE PERMISSION MAYT BE CHECKED AT A TIME
+     * @param permission
+     * @return
      */
-    public boolean  checkPermission(String[] permissions){
-        Log.d(TAG, "checkPermission: checking that permission " + permissions[0] + "was granted");
+    public boolean checkPermission(String[] permission){
+        Log.d(TAG, "checkPermission: checking permissions for:" + permission[0]);
 
-        int permissionAceccess = ActivityCompat.checkSelfPermission(MainActivity.this,permissions[0]);
+        int permissionRequest = ActivityCompat.checkSelfPermission(
+                MainActivity.this,
+                permission[0]);
 
-        if(permissionAceccess != PackageManager.PERMISSION_GRANTED){
-            Log.d(TAG, "checkPermission: "+" permission was denied");
-            //TODO TOAST RE-REQUESTING PERMISSION
+        if(permissionRequest != PackageManager.PERMISSION_GRANTED){
+            Log.d(TAG, "checkPermission: \n Permissions was not granted for: " + permission[0]);
             return false;
         }else{
-            Log.d(TAG, "checkPermission: "+" permission was granted");
             return true;
         }
-
     }
 
-
-    /**
-     * 3rd permission checking method
-     * @param requestCode type of permission
-     * @param permissions string array it belongs in
-     * @param grantResults result status
-     */
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        Log.d(TAG, "onRequestPermissionsResult: requestCode = " + requestCode);
+        Log.d(TAG, "onRequestPermissionsResult: requestCode: " + requestCode);
 
         switch(requestCode){
             case REQUEST_CODE:
                 for(int i = 0; i < permissions.length; i++){
                     if(grantResults[i] == PackageManager.PERMISSION_GRANTED){
-                        Log.d(TAG, "onRequestPermissionsResult: "+permissions[i]+" granted permission verified");
+                        Log.d(TAG, "onRequestPermissionsResult: User has allowed permission to access: " + permissions[i]);
                     }else{
                         break;
                     }
                 }
                 break;
         }
-
-    }
-
-    /**
-     * Edit contact layout logic that collects the bundle info and moves it
-     * @param contact the part of the array that contains an individual's parameters
-     */
-    @Override
-    public void onEditContactSelected(Contact contact) {
-        Log.d(TAG, "onEditContactSelected: contact selected from "
-                + getString(R.string.edit_contact_fragment)
-                + " " + contact.getName());
-
-        EditContactFragment fragment = new EditContactFragment();
-        Bundle args = new Bundle();
-        args.putParcelable(getString(R.string.contact), contact);
-        fragment.setArguments(args);
-
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.fragment_container, fragment);
-        transaction.addToBackStack(getString(R.string.edit_contact_fragment));
-        transaction.commit();
-
     }
 }

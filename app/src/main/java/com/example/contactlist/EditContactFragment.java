@@ -1,5 +1,6 @@
 package com.example.contactlist;
 
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -24,7 +25,7 @@ import com.example.contactlist.models.Contact;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
-public class EditContactFragment extends Fragment{
+public class EditContactFragment extends Fragment implements ChangePhotoDialog.OnPhotoReceivedListener {
     private static final String TAG = "EditContactFragment";
 
     private Contact mContact;
@@ -84,27 +85,30 @@ public class EditContactFragment extends Fragment{
         });
 
         //choose for new image
-        ImageView ivCameraEdit = (ImageView) view.findViewById(R.id.ivCameraEdit);
-        ivCameraEdit.setOnClickListener(new View.OnClickListener() {
+        ImageView ivCamera = (ImageView) view.findViewById(R.id.ivCameraEdit);
+        ivCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                /*
-                Permissions check/verification
-                 */
-                Log.d(TAG, "onClick: clicked camera edit path.");
-                for(int i = 0; i < Init.PERMISSIONS.length;i++){
-                    String[] permissions = {Init.PERMISSIONS[i]};
-                    if(((MainActivity)getActivity()).checkPermission(permissions)) {
-                        //nothing should happen here if permissions are all good
+
+                //TODO: OPENING CAMERA ICON MULITPLE TIMES
+                for( int i = 0; i < Init.PERMISSIONS.length; i++){
+                    String[] permission = {Init.PERMISSIONS[i]};
+                    if(((MainActivity)getActivity()).checkPermission(permission)){
+                        if(i == Init.PERMISSIONS.length - 1){
+                            Log.d(TAG, "onClick: opening the 'image selection dialog box'.");
+                            ChangePhotoDialog dialog = new ChangePhotoDialog();
+                            dialog.show(getFragmentManager(), getString(R.string.change_photo_dialog));
+                            dialog.setTargetFragment(EditContactFragment.this, 0);
+                        }
                     }else{
-                        ((MainActivity)getActivity()).verifyPermissions(Init.PERMISSIONS);
+                        ((MainActivity)getActivity()).verifyPermissions(permission);
                     }
                 }
 
-                ChangePhotoDialog changePhotoDialog = new ChangePhotoDialog();
-                changePhotoDialog.show(getFragmentManager(), getString(R.string.change_photo_dialog));
+
             }
         });
+
         return view;
     }
 
@@ -154,4 +158,19 @@ public class EditContactFragment extends Fragment{
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Grabs the photo from ChangePhotoDialog fragment
+     * @param bitmap image
+     */
+    @Override
+    public void getBitmapImage(Bitmap bitmap) {
+        Log.d(TAG, "getBitmapImage: got the bitmap: " + bitmap);
+        //get the bitmap from 'ChangePhotoDialog'
+        if(bitmap != null) {
+            //compress the image (if you like)
+            ((MainActivity)getActivity()).compressBitmap(bitmap, 70);
+            mContactImage.setImageBitmap(bitmap);
+        }
+
+    }
 }

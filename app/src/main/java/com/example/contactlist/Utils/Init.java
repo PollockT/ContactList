@@ -13,4 +13,6 @@ public class Init {
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.CAMERA};
 
+    public static final int CAMERA_REQUEST_CODE = 5;
+
 }
