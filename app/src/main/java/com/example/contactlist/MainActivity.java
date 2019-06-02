@@ -18,7 +18,8 @@ import java.io.ByteArrayOutputStream;
 
 public class MainActivity extends AppCompatActivity implements
         ViewContactsFragment.OnContactSelectedListener,
-        ContactFragment.OnEditContactListener {
+        ContactFragment.OnEditContactListener,
+        ViewContactsFragment.OnAddContactListener {
 
     private static final String TAG = "MainActivity";
 
@@ -118,8 +119,8 @@ public class MainActivity extends AppCompatActivity implements
 
     /**
      * Checks to see if permission was granted for the passed parameters
-     * ONLY ONE PERMISSION MAYT BE CHECKED AT A TIME
-     * @param permission
+     * ONLY ONE PERMISSION MAY BE CHECKED AT A TIME
+     * @param permission 
      * @return
      */
     public boolean checkPermission(String[] permission){
@@ -153,4 +154,18 @@ public class MainActivity extends AppCompatActivity implements
                 break;
         }
     }
+
+    @Override
+    public void onAddContact() {
+        Log.d(TAG,"onAddContact: navigating to " + getString(R.string.add_contact_fragment));
+
+        AddContactFragment fragment = new AddContactFragment();
+
+
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, fragment);
+        transaction.addToBackStack(getString(R.string.add_contact_fragment));
+        transaction.commit();
+    }
 }
+

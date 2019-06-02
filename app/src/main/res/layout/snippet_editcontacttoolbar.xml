@@ -25,13 +25,14 @@
                     android:src="@drawable/ic_check"/>
 
                 <TextView
+                    android:id="@+id/tvTitleActionBar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@+id/ivBackArrow"
                     android:layout_marginStart="20dp"
                     android:textSize="20sp"
                     android:textColor="@color/white"
-                    android:text="@string/editing_contacting"/>
+                    />
 
                 <ImageView
                     android:id="@+id/ivBackArrow"

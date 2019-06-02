@@ -1,28 +1,38 @@
 package com.example.contactlist;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.example.contactlist.Utils.ContactListAdapter;
+import com.example.contactlist.Utils.DatabaseHelper;
 import com.example.contactlist.models.Contact;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Locale;
 
 public class ViewContactsFragment extends Fragment {
 
     private static final String TAG = "ViewContactsFragment";
+
     private String imageURL0 = "photos2.fotosearch.com/bthumb/CSP/CSP881/ninja-mascot-clip-art__k25046218.jpg";
     private String imageURL1 = "lh3.googleusercontent.com/-5s6sZRQzcxc/UcztTeDJq8I/AAAAAAAAAHE/v-PgdSa5O3Y/s396/Photo%252520Jun%25252022%25252C%2525202013%25252C%2525202%25253A40%252520AM.jpg";
     private String imageURL2 = "lumiere-a.akamaihd.net/v1/images/luke-skywalker-i-am-a-jedi_fce1d84d.jpeg?region=204%2C0%2C414%2C413";
@@ -31,6 +41,12 @@ public class ViewContactsFragment extends Fragment {
     private String imageURL5 = "us.123rf.com/450wm/baggira/baggira1703/baggira170300027/75539553-a-ferocious-evil-cat-on-the-windowsill-on-the-street-angry-mistrustful-cussing-cat-the-cat-looks-mal.jpg?ver=6";
     private String imageURL6 = "bookmole1.files.wordpress.com/2010/10/picard.jpg";
 
+    private EditText  mSearchContacts;
+
+    public interface  OnAddContactListener{
+        public void onAddContact();
+    }
+    OnAddContactListener mOnAddContact;
 
     public interface OnContactSelectedListener{
         public void OnContactSelected(Contact con);
@@ -55,6 +71,7 @@ public class ViewContactsFragment extends Fragment {
         viewContactsBar = (AppBarLayout) view.findViewById(R.id.viewContactsToolbar);
         searchBar = (AppBarLayout) view.findViewById(R.id.searchToolbar);
         contactsList = (ListView) view.findViewById(R.id.contactsList);
+        mSearchContacts = (EditText) view.findViewById(R.id.etSearchContacts);
         Log.d(TAG, "onCreateView: started.");
 
 
@@ -68,6 +85,7 @@ public class ViewContactsFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "onClick: clicked fab.");
+                mOnAddContact.onAddContact();
             }
         });
 
@@ -99,6 +117,7 @@ public class ViewContactsFragment extends Fragment {
 
         try{
             mContactListener = (OnContactSelectedListener) getActivity();
+            mOnAddContact = (OnAddContactListener) getActivity();
         }catch (ClassCastException e){
             Log.e(TAG, "onAttach: ClassCastException: " + e.getMessage() );
         }
@@ -109,15 +128,59 @@ public class ViewContactsFragment extends Fragment {
         final ArrayList<Contact> contacts = new ArrayList<>();
         Log.d(TAG, "setupContactsList: contact list populating");
 
-        contacts.add(new Contact("Theodore Pollock","(555)555-5555","mobile","pollock@gmail.com",imageURL0));
-        contacts.add(new Contact("Katherine Janeway","(555)555-4326","mobile","janeway@gmail.com",imageURL1));//
-        contacts.add(new Contact("Luke Skywalker","(555)555-2654","mobile","Skywalker@gmail.com",imageURL2));//
-        contacts.add(new Contact("Zach Baggins","(555)555-3543","mobile","Baggins@gmail.com",imageURL3));//
-        contacts.add(new Contact("Rangy Cat","(614)205-0940","land","cat@gmail.com",imageURL4));//
-        contacts.add(new Contact("Rusty Cat","(614)296-1153","land","cat2@gmail.com",imageURL5));//
-        contacts.add(new Contact("Jean-Luk Picard","(555)555-1642","mobile","Picard@gmail.com",imageURL6));//
+  //      contacts.add(new Contact("Theodore Pollock","(555)555-5555","mobile","pollock@gmail.com",imageURL0));
+  //      contacts.add(new Contact("Katherine Janeway","(555)555-4326","mobile","janeway@gmail.com",imageURL1));//
+  //      contacts.add(new Contact("Luke Skywalker","(555)555-2654","mobile","Skywalker@gmail.com",imageURL2));//
+  //      contacts.add(new Contact("Zach Baggins","(555)555-3543","mobile","Baggins@gmail.com",imageURL3));//
+  //      contacts.add(new Contact("Rangy Cat","(614)205-0940","land","cat@gmail.com",imageURL4));//
+  //      contacts.add(new Contact("Rusty Cat","(614)296-1153","land","cat2@gmail.com",imageURL5));//
+  //      contacts.add(new Contact("Jean-Luk Picard","(555)555-1642","mobile","Picard@gmail.com",imageURL6));//
 
-        adapter = new ContactListAdapter(getActivity(), R.layout.layout_contactslistitem, contacts, "https://");
+        DatabaseHelper databaseHelper= new DatabaseHelper(getActivity());
+        Cursor cursor = databaseHelper.getAllContacts();
+
+        if(!cursor.moveToNext()){
+            Toast.makeText(getActivity(),"There are no contacts to show", Toast.LENGTH_SHORT).show();
+        }
+
+        while(cursor.moveToNext()){
+            contacts.add(new Contact(
+                    cursor.getString(1),//mName
+                    cursor.getString(2),//mPhoneNumber
+                    cursor.getString(3),//device
+                    cursor.getString(4),//email
+                    cursor.getString(5)//avatar
+                    ));
+        }
+
+        Collections.sort(contacts, new Comparator<Contact>() {
+            @Override
+            public int compare(Contact o1, Contact o2) {
+                return o1.getName().compareToIgnoreCase(o2.getName());
+            }
+        });
+
+        adapter = new ContactListAdapter(getActivity(), R.layout.layout_contactslistitem, contacts, "");
+        //search function added before adapter set
+        //TODO: DON'T ABSTRACTLY GRAB LETTERS FROM ANY CONTACT
+        mSearchContacts.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                String text = mSearchContacts.getText().toString().toLowerCase(Locale.getDefault());
+                adapter.filter(text);
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+
         contactsList.setAdapter(adapter);
 
         contactsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -129,6 +192,8 @@ public class ViewContactsFragment extends Fragment {
                 mContactListener.OnContactSelected(contacts.get(position));
             }
         });
+
+
     }
 
     /**

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
@@ -23,6 +24,7 @@ public class ChangePhotoDialog extends DialogFragment{
 
     public interface OnPhotoReceivedListener{
         public void getBitmapImage(Bitmap bitmap);
+        public void getImagePath(String imagePath);
     }
 
     OnPhotoReceivedListener mOnPhotoReceived;
@@ -49,6 +51,10 @@ public class ChangePhotoDialog extends DialogFragment{
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "onClick: accessing phones memory.");
+                Intent browse = new Intent(Intent.ACTION_GET_CONTENT);
+                browse.setType("image/*");
+                startActivityForResult(browse, Init.PICKFILE_REQUEST_CODE);
+
 
             }
         });
@@ -81,7 +87,7 @@ public class ChangePhotoDialog extends DialogFragment{
         super.onActivityResult(requestCode, resultCode, data);
 
         /*
-        REsults when taking a new image with camera
+        Results when taking a new image with camera
          */
         if(requestCode == Init.CAMERA_REQUEST_CODE && resultCode == Activity.RESULT_OK){
             Log.d(TAG, "onActivityResult: done taking a picture.");
@@ -94,5 +100,19 @@ public class ChangePhotoDialog extends DialogFragment{
             mOnPhotoReceived.getBitmapImage(bitmap);
             getDialog().dismiss();
         }
+
+        /*
+        Results when selecting new image from phone memory
+         */
+        if(requestCode == Init.PICKFILE_REQUEST_CODE && resultCode == Activity.RESULT_OK){
+            Uri selectedImageUri = data.getData();
+            File file = new File(selectedImageUri.toString());
+
+            Log.d(TAG, "onActivityResult: images: " + file.getPath());
+            mOnPhotoReceived.getImagePath(file.getPath());
+            getDialog().dismiss();
+
+        }
+
     }
 }

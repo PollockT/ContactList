@@ -1,6 +1,7 @@
 package com.example.contactlist;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -17,10 +18,11 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-
+import android.widget.Toast;
 
 
 import com.example.contactlist.Utils.ContactListProperty;
+import com.example.contactlist.Utils.DatabaseHelper;
 import com.example.contactlist.Utils.UniversalImageLoader;
 import com.example.contactlist.models.Contact;
 
@@ -37,7 +39,8 @@ public class ContactFragment extends Fragment{
     }
 
     OnEditContactListener mOnEditContactListener;
-    //This will skip the nullpointer exception when adding to a new bundle from MainActivity
+
+    //NullPointer exception avoidence when adding new bundle
     public ContactFragment(){
         super();
         setArguments(new Bundle());
@@ -94,7 +97,7 @@ public class ContactFragment extends Fragment{
 
     private void init(){
         mContactName.setText(mContact.getName());
-        UniversalImageLoader.setImage(mContact.getProfileImage(), mContactImage, null, "http://");
+        UniversalImageLoader.setImage(mContact.getProfileImage(), mContactImage, null, "");
 
         ArrayList<String> properties = new ArrayList<>();
         properties.add(mContact.getPhoneNumber());
@@ -117,10 +120,49 @@ public class ContactFragment extends Fragment{
         switch (item.getItemId()){
             case R.id.menuitem_delete:
                 Log.d(TAG, "onOptionsItemSelected: deleting contact.");
+                DatabaseHelper databaseHelper = new DatabaseHelper(getActivity());
+                Cursor cursor = databaseHelper.getContactID(mContact);
+
+                int contactID = -1;
+                while(cursor.moveToNext()){
+                    contactID = cursor.getInt(0);
+                }
+                if(contactID > -1){
+                    if(databaseHelper.deleteContact(contactID) > 0){
+                        Toast.makeText(getActivity(), "Contact Deleted", Toast.LENGTH_SHORT).show();
+
+                        //clear the arguments ont he current bundle since the contact is deleted
+                        this.getArguments().clear();
+
+                        //remove previous fragemnt from the backstack (therefore navigating back)
+                        getActivity().getSupportFragmentManager().popBackStack();
+                    }
+                    else{
+                        Toast.makeText(getActivity(), "Database Error", Toast.LENGTH_SHORT).show();
+                    }
+                }
         }
+
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        DatabaseHelper databaseHelper = new DatabaseHelper(getActivity());
+        Cursor cursor  = databaseHelper.getContactID(mContact);
+
+        int contactID = -1;
+        while(cursor.moveToNext()){
+            contactID = cursor.getInt(0);
+        }
+        if(contactID > -1){ // If the contact doesn't still exists then navigate back by popping the stack
+            init();
+        }else{
+            this.getArguments().clear(); //optional clear arguments but not necessary
+            getActivity().getSupportFragmentManager().popBackStack();
+        }
+    }
     private Contact getContactFromBundle(){
         Log.d(TAG, "getContactFromBundle: arguments: " + getArguments());
 
